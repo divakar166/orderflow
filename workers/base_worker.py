@@ -51,11 +51,15 @@ class BaseWorker:
                         f"topic={message.topic} key={message.key} offset={message.offset}"
                     )
                     await self.handle_message(message.value)
+                except asyncio.CancelledError:
+                    raise
                 except Exception as e:
                     logger.exception(
                         f"[{self.__class__.__name__}] Error handling message: {e}"
                     )
                     await asyncio.sleep(0.5)
+        except asyncio.CancelledError:
+            logger.info(f"[{self.__class__.__name__}] Cancelled — shutting down cleanly")
         finally:
             await self.stop()
 

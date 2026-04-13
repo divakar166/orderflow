@@ -41,7 +41,10 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down workers...")
     for task in _worker_tasks:
         task.cancel()
-    await asyncio.gather(*_worker_tasks, return_exceptions=True)
+    results = await asyncio.gather(*_worker_tasks, return_exceptions=True)
+    for task, result in zip(_worker_tasks, results):
+        if isinstance(result, Exception) and not isinstance(result, asyncio.CancelledError):
+            logger.warning(f"Worker {task.get_name()} exited with error: {result}")
 
     await stop_producer()
     logger.info("Shutdown complete.")
